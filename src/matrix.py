@@ -103,7 +103,7 @@ class Matrix:
         """ Mengembalikan salinan nilai list suatu matrix"""
         return self.__matrix.copy()
     
-    def display(self, matrix : list = [], decoration : str = "", coefficient = 1) -> None:
+    def display(self, matrix : list = [], decoration : str = "", coefficient = 1, digitShow = 3) -> None:
         """ Menampilkan matrix ke dalam terminal dengan dekorasi dan nilai koefisien
         
         #### Parameters
@@ -118,6 +118,9 @@ class Matrix:
             Coefficient adalah koefisien matrix yang akan ditampilkan di bagian kiri matrix
             sebelum dekorasi.
             Contoh input coefficient = -4 
+        - #### digitShow : int
+            digitShow digunakan untuk berapa banyak n-digit yang ditampilkan. Hal ini tidak merubah
+            nilai matrix
         """
         if matrix == []:
             matrix = self.getMatrix()
@@ -142,7 +145,7 @@ class Matrix:
                     print(decoration, end="\t")
 
                 for div in row:
-                    print(div, end="\t")
+                    print(round(div, digitShow), end="\t")
                 print(decoration)
                 index += 1
 
