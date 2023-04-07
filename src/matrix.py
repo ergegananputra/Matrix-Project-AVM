@@ -146,6 +146,7 @@ class Matrix:
                 print(decoration)
                 index += 1
 
+    
 
 class MyMath:
     """ Kelas Matematika untuk pembagian dan menyederhanakan nilai elemen baris matrix"""
@@ -157,14 +158,14 @@ class MyMath:
         else:
             return x1 / x2
         
-        
-    def roundRow(self, Row) -> list:
+    def roundRow(self, Row, precision : float = 0.0000000001) -> list:
         tempRow = []
         for col in Row:
-            if 0.0000000001 > col % 1 > -0.0000000001:
-                tempRow.append(int(col))
-            else:
-                tempRow.append(round(col, 3))
+            # if precision > col % 1 > -1 * precision:
+            #     tempRow.append(int(col))
+            # else:
+            #     tempRow.append(round(col, 3))
+            tempRow.append(self.division(col, 1, precision))
         return tempRow
 
 
@@ -210,7 +211,7 @@ class Operasi_Baris_Elementer(Matrix, MyMath):
             self.matrix[row] = newRow
     
     def Operasi_Baris_Elementer(self) -> None:
-        """Mencari Matrix elementer
+        """Mencari Matrix elementer Triangular
         
         #### Raise
         - ##### ZeroDivisionError
@@ -221,8 +222,7 @@ class Operasi_Baris_Elementer(Matrix, MyMath):
         self.zero_interchange_diagonal()
         for row in range(super().getRow()):
             self.zeroLeft(row)
-        for row in range(super().getRow()):
-            self.zeroRight(row)
+        
 
     def zero_interchange_diagonal(self, startIndex = 0) -> None:
         """Memindahkan elemen diagonal matrix yang memiliki nilai 0 dengan cara
@@ -286,7 +286,7 @@ class Operasi_Baris_Elementer(Matrix, MyMath):
         determinan = self.k
         for i in range(super().getRow()):
             determinan *= self.matrix[i][i]
-        return determinan
+        return super().division(determinan, 1)    # Melakukan pembulatan
         
 
 class Cofactor_Expansion_Determinan(Operasi_Baris_Elementer):
@@ -314,7 +314,7 @@ class Cofactor_Expansion_Determinan(Operasi_Baris_Elementer):
     
     def inversion(self, i : int, j: int):
         """Menghitung nilai inversi"""
-        return (-1)**(i+j)
+        return 1 if (i+j)%2 == 0 else -1
 
     def cofactorExpansion(self, row_cofactor : int = 0):
         """Mencari determinan menggunakan Ekspansi Kofaktor
@@ -330,6 +330,9 @@ class Cofactor_Expansion_Determinan(Operasi_Baris_Elementer):
             if self.__queue != []:
                 matrix_now : Matrix = self.dequeue()
 
+                if row_cofactor >= matrix_now.getRow():
+                    row_cofactor -= 1
+
             if matrix_now.getRow() > 2 :
                 
                 # Membuat Matrix Minors, Inversion dan Minor Entry
@@ -337,6 +340,7 @@ class Cofactor_Expansion_Determinan(Operasi_Baris_Elementer):
                     new_matrix : Matrix = Matrix()
                     new_matrix.updateCoefficient_by(matrix_now.getMatrix()[row_cofactor][column_cofactor])    # Minor Entry
                     new_matrix.updateCoefficient_by(self.inversion(row_cofactor, column_cofactor))    # Inversion
+                    new_matrix.updateCoefficient_by(matrix_now.getCoefficient())    # Menurunkan koefisien sebelumnya
 
                     # Matrix Minors
                     __temp__matrix = []
@@ -361,10 +365,13 @@ class Cofactor_Expansion_Determinan(Operasi_Baris_Elementer):
                 self.__determinan += (matrix_now.getMatrix()[0][0] * matrix_now.getMatrix()[1][1] \
                                     - matrix_now.getMatrix()[0][1] * matrix_now.getMatrix()[1][0]) \
                                     * matrix_now.getCoefficient()
-                
+       
 
-    def findDeterminanMatrix(self):
-        """Mencari determinan menggunakan Cofactor Expansion
+    def findDeterminanMatrix(self, MinorsRow : int = None):
+        """Mencari determinan menggunakan Cofactor Expansion.
+
+        #### Parameters
+        - MinorsRow, merupakan i dari Mij. i dimulai dari index 1
         
         #### Override method
         - from child class : Cofactor_Expansion_Determinan
@@ -372,8 +379,14 @@ class Cofactor_Expansion_Determinan(Operasi_Baris_Elementer):
         self.__determinan = 0
         self.coefficient = 1
 
-        self.cofactorExpansion()
+        if MinorsRow == None:
+            self.cofactorExpansion()
+        else:
+            self.cofactorExpansion(MinorsRow-1)
+
         return self.__determinan
+
+    
 
         
 
