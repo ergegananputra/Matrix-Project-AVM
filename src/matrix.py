@@ -7,11 +7,20 @@ oleh:
     - Risma S
 '''
 
+from dataclasses import dataclass
+
+@dataclass
 class Matrix:
     """class yang digunakan untuk menampilkan dan membuat matrix
+    ### Atributes
+    - matrix, list dalam list.
+    - row, banyak baris suatu matrix
+    - column, banyak kolom suatu matrix
+    - coefficient, koefisien suatu matrix
 
     ### Methods
     - createMatrix() -> void
+    - createInstantMatrix() -> void
     - getRow() -> int
     - getColumn() -> int
     - getMatrix() -> list matrix
@@ -22,6 +31,17 @@ class Matrix:
         self.__matrix = []
         self.__row    : int = 0
         self.__column : int = 0
+        self.__coefficient = 1
+    
+    def updateCoefficient_by(self, value : int | float = 1):
+        """Mengkalikan koefisien dengan suatu value. 
+
+        #### Warning!
+        Value 0 adalah untuk mereset koefisien"""
+        self.__coefficient *= value
+    
+    def getCoefficient(self):
+        return self.__coefficient
     
     def createMatrix(self, row : int = 0, column : int= 0, fill : float | int = None, type : object = float):
         '''Membuat matrix
@@ -42,7 +62,6 @@ class Matrix:
         createMatrix(row=3, column=3, fill=0, type=int) \n
         akan terbentuk matrix 3x3 dengan isi semua elemen bernilai 0 
         '''
-
         if type not in [int, float]:
             type = float
         try:
@@ -58,6 +77,19 @@ class Matrix:
         finally:
             self.__row    = row
             self.__column = column
+    
+    def createInstantMatrix(self, matrix = [[]]):
+        '''Membuat Matrix secara instant dengan memberikan array matrix'''
+        if isinstance(matrix, list):
+            self.__matrix = matrix
+            self.__row = len(matrix)
+            self.__column = len(matrix[0])
+        
+        elif isinstance(matrix, Matrix):
+            self.__matrix = matrix.getMatrix()
+            self.__row = matrix.getRow()
+            self.__column = matrix.getColumn()
+
     
     def getRow(self) -> int | float:
         """ Mengembalikan nilai banyak baris suatu matrix"""
@@ -118,15 +150,13 @@ class Matrix:
 class MyMath:
     """ Kelas Matematika untuk pembagian dan menyederhanakan nilai elemen baris matrix"""
     def division(self, x1, x2, precision : float = 0.0000000001):
-        try:
-            result = x1 / x2
-            if precision > result % 1 > -1*precision:
-                result = int(result)
-                return result
-            else:
-                return x1 / x2
-        except ZeroDivisionError as e:
-            raise ZeroDivisionError(f"{x1} / {x2}")
+        result = x1 / x2
+        if precision > result % 1 > -1*precision:
+            result = int(result)
+            return result
+        else:
+            return x1 / x2
+        
         
     def roundRow(self, Row) -> list:
         tempRow = []
@@ -139,18 +169,11 @@ class MyMath:
 
 
 class Operasi_Baris_Elementer(Matrix, MyMath):
+    """Kelas ini melakukan operasi baris elementer"""
     def __init__(self):
         super().__init__()
-        self.__queue = []
         self.matrix : list = []
         self.k = 1
-    
-    def clearQueue(self):
-        """Menghapus queue.
-        
-        Belum Di implementasikan
-        """
-        self.__queue = []
     
     def zeroLeft(self, columnDiv : int) -> None:
         """Membuat elemen yang ada di kiri elemen menjadi bernilai 0.
@@ -165,7 +188,6 @@ class Operasi_Baris_Elementer(Matrix, MyMath):
         if headRow == 0:
             self.zero_interchange_diagonal(startIndex=columnDiv)
             headRow = self.matrix[columnDiv]
-            
         for row in range(columnDiv + 1, super().getRow()):
             toZeroConstant = super().division(self.matrix[row][columnDiv] , headRow[columnDiv])
             newRow = super().roundRow([self.matrix[row][x] - headRow[x] * toZeroConstant for x in range(super().getRow())])
@@ -182,7 +204,6 @@ class Operasi_Baris_Elementer(Matrix, MyMath):
         headRow = self.matrix[columnDiv]
         if headRow == 0:
             headRow = self.matrix[columnDiv]
-
         for row in range(columnDiv - 1, -1, -1):
             toZeroConstant = self.division(self.matrix[row][columnDiv] , headRow[columnDiv])
             newRow = super().roundRow([self.matrix[row][x] - headRow[x] * toZeroConstant for x in range(super().getRow())])
@@ -253,9 +274,14 @@ class Operasi_Baris_Elementer(Matrix, MyMath):
 
     def findDeterminanMatrix(self):
         """Mencari determinan suatu matrix
+        #### Variablles:
+        - k = coefficient suatu matrix
+        - determinan (local) = nilai determinan
+
         #### Return
             mengembalikan nilai determinan
         """
+        self.k = 1
         self.Operasi_Baris_Elementer()
         determinan = self.k
         for i in range(super().getRow()):
@@ -263,4 +289,91 @@ class Operasi_Baris_Elementer(Matrix, MyMath):
         return determinan
         
 
+class Cofactor_Expansion_Determinan(Operasi_Baris_Elementer):
+    """Kelas untuk mencari determinan menggunakan Cofactor Expansion.
+    Kelas ini merupakan child dari class Operasi_Baris_Elementer.
+    Kelas ini menggunakan konsep queue untuk membuat ekspansi mencapai matrix 2x2.
+    
+    #### Methods:
+    - enqueue()
+    - dequeue()
+    - inversion()
+    - cofactorExpansion()
+    - findDeterminanMatrix()
+    """
+    def __init__(self):
+        super().__init__()
+        self.__queue : list[Matrix] = []
+        self.__determinan = 0
+    
+    def enqueue(self, matrix : Matrix):
+        self.__queue.insert(0, matrix)
+    
+    def dequeue(self) -> Matrix:
+        return self.__queue.pop()
+    
+    def inversion(self, i : int, j: int):
+        """Menghitung nilai inversi"""
+        return (-1)**(i+j)
+
+    def cofactorExpansion(self, row_cofactor : int = 0):
+        """Mencari determinan menggunakan Ekspansi Kofaktor
+        
+        #### Parameter
+        - row_cofactor = baris dimana Minors dibuat
+        """
+        temp_matrix : Matrix = Matrix()
+        temp_matrix.createInstantMatrix(super().getMatrix())
+        self.enqueue(temp_matrix)
+
+        while self.__queue != []:
+            if self.__queue != []:
+                matrix_now : Matrix = self.dequeue()
+
+            if matrix_now.getRow() > 2 :
+                
+                # Membuat Matrix Minors, Inversion dan Minor Entry
+                for column_cofactor in range(matrix_now.getColumn()):
+                    new_matrix : Matrix = Matrix()
+                    new_matrix.updateCoefficient_by(matrix_now.getMatrix()[row_cofactor][column_cofactor])    # Minor Entry
+                    new_matrix.updateCoefficient_by(self.inversion(row_cofactor, column_cofactor))    # Inversion
+
+                    # Matrix Minors
+                    __temp__matrix = []
+                    for i in range(matrix_now.getRow()):
+                        if i == row_cofactor:
+                            continue
+                        
+                        __temp__row = []
+                        for j in range(matrix_now.getColumn()):
+                            if j == column_cofactor:
+                                continue
+                            
+                            __temp__row.append(matrix_now.getMatrix()[i][j])
+                        
+                        __temp__matrix.append(__temp__row)
+                    
+                    new_matrix.createInstantMatrix(__temp__matrix)
+                    self.enqueue(new_matrix)
+            
+            else:
+                # Menghitung Determinan Matrix 2 x 2
+                self.__determinan += (matrix_now.getMatrix()[0][0] * matrix_now.getMatrix()[1][1] \
+                                    - matrix_now.getMatrix()[0][1] * matrix_now.getMatrix()[1][0]) \
+                                    * matrix_now.getCoefficient()
+                
+
+    def findDeterminanMatrix(self):
+        """Mencari determinan menggunakan Cofactor Expansion
+        
+        #### Override method
+        - from child class : Cofactor_Expansion_Determinan
+        """
+        self.__determinan = 0
+        self.coefficient = 1
+
+        self.cofactorExpansion()
+        return self.__determinan
+
+        
 
